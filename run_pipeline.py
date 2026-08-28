@@ -44,14 +44,27 @@ def is_server_ready(host=HYBRID_HOST, port=HYBRID_PORT, timeout=2.0) -> bool:
         except Exception:
             return False
 
+def detect_device() -> str:
+    """Dynamically detect the fastest available hardware accelerator."""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return "cuda"
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+    except Exception:
+        pass
+    return "mps" if sys.platform == "darwin" else "cpu"
+
 def start_hybrid_server() -> subprocess.Popen:
     """Start local docling hybrid server in the background."""
     if is_server_ready():
         print(f"[*] Hybrid server is already running on {HYBRID_URL}")
         return None
 
-    # Detect optimal accelerator: Apple Silicon MPS on macOS, CUDA on Nvidia, CPU fallback
-    device = "mps" if sys.platform == "darwin" else "cpu"
+    # Automatically choose CUDA (NVIDIA GPU), MPS (Apple Silicon), or CPU
+    device = detect_device()
+    print(f"[*] Detected hardware accelerator: {device.upper()}")
     print(f"[*] Starting Hybrid AI Server on {HYBRID_URL} (device={device})...")
     
     cmd = [
