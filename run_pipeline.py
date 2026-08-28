@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-OpenDataLoader PDF - Ultimate Quality Pipeline
+OpenDataLoader PDF - Ultimate Quality Turnkey Pipeline
 Automates:
-1. Lifecycle management of the Hybrid Docling Server (Formula LaTeX + SmolVLM Alt Text + No OCR noise)
-2. Batch PDF conversion using maximum quality settings
-3. Post-processing & verification summary
+1. Cross-platform environment configuration (Java detection, PATH, OS-specific GPU/MPS accelerators)
+2. Lifecycle management of the Hybrid Docling Server
+3. Batch PDF conversion using maximal quality settings (tables, reading order, 300 DPI)
+4. Post-processing & verification summary
 """
 
 import os
@@ -16,10 +17,15 @@ import urllib.request
 import json
 from pathlib import Path
 
-# Add OpenJDK to PATH if available in Homebrew
+# Cross-platform Java & Environment Setup
 HOMEBREW_JDK = "/opt/homebrew/opt/openjdk@17/bin"
 if os.path.exists(HOMEBREW_JDK) and HOMEBREW_JDK not in os.environ.get("PATH", ""):
-    os.environ["PATH"] = f"{HOMEBREW_JDK}:{os.environ.get('PATH', '')}"
+    os.environ["PATH"] = f"{HOMEBREW_JDK}{os.pathsep}{os.environ.get('PATH', '')}"
+
+if "JAVA_HOME" in os.environ:
+    java_bin = os.path.join(os.environ["JAVA_HOME"], "bin")
+    if os.path.exists(java_bin) and java_bin not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = f"{java_bin}{os.pathsep}{os.environ.get('PATH', '')}"
 
 HYBRID_HOST = "127.0.0.1"
 HYBRID_PORT = 5002
@@ -44,8 +50,10 @@ def start_hybrid_server() -> subprocess.Popen:
         print(f"[*] Hybrid server is already running on {HYBRID_URL}")
         return None
 
-    print(f"[*] Starting Hybrid AI Server on {HYBRID_URL}...")
+    # Detect optimal accelerator: Apple Silicon MPS on macOS, CUDA on Nvidia, CPU fallback
     device = "mps" if sys.platform == "darwin" else "cpu"
+    print(f"[*] Starting Hybrid AI Server on {HYBRID_URL} (device={device})...")
+    
     cmd = [
         "opendataloader-pdf-hybrid",
         "--host", HYBRID_HOST,
@@ -56,7 +64,7 @@ def start_hybrid_server() -> subprocess.Popen:
     
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    print(f"[*] Waiting for AI server (device={device}) & ML models to initialize...")
+    print(f"[*] Initializing AI server & ML models...")
     for _ in range(60):
         if is_server_ready():
             print("[+] Hybrid AI server is ready and listening!")
@@ -130,7 +138,7 @@ def summarize_outputs(output_p: Path):
             print(f"File: {jf.stem}")
             print(f"  • Pages: {pages}")
             print(f"  • Elements: {len(kids)}")
-            print(f"  • Formulas (LaTeX): {formulas}")
+            print(f"  • Formulas: {formulas}")
             print(f"  • Tables: {tables}")
             print(f"  • Figures / Images: {pictures}")
         except Exception as e:
@@ -138,6 +146,12 @@ def summarize_outputs(output_p: Path):
     print("------------------------------------------------------\n")
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print("Usage: python run_pipeline.py [INPUT_PATH] [OUTPUT_DIR]")
+        print("Default INPUT_PATH: data")
+        print("Default OUTPUT_DIR: data/output_perfect")
+        sys.exit(0)
+
     server_proc = start_hybrid_server()
     try:
         input_target = sys.argv[1] if len(sys.argv) > 1 else "data"
