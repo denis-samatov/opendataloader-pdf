@@ -115,3 +115,20 @@ The [`run_pipeline.py`](./run_pipeline.py) script automatically manages the life
 ├── python/                               # Python SDK source code
 └── README.md                             # Original project documentation
 ```
+## Fork scope and lifecycle contract
+
+The PDF engine and published extraction benchmarks are upstream work. This fork's
+custom `run_pipeline.py` is a local orchestration helper; it is not independent
+evidence of the upstream accuracy numbers or clinical/accessibility qualification.
+
+The helper selects only accelerators reported available by PyTorch and falls back
+to CPU. It requires a successful HTTP health check, fails if startup does not become
+ready, and stops only the server process it started, including on conversion
+failure. An already-running server is left running. The health probe does not
+authenticate the identity of an arbitrary local service; reserve the configured
+loopback port for your trusted backend.
+
+Run the offline orchestration regression tests with
+`python -m pytest tests/test_pipeline_lifecycle.py`. They neither start a server nor
+download models. Real PDF conversion, backend versions, GPU/MPS behavior and rights
+to bundled source documents still require independent validation before use.
