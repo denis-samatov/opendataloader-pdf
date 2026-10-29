@@ -11,7 +11,6 @@ Automates:
 import os
 import sys
 import time
-import socket
 import subprocess
 import urllib.request
 import json
@@ -38,11 +37,7 @@ def is_server_ready(host=HYBRID_HOST, port=HYBRID_PORT, timeout=2.0) -> bool:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.status == 200
     except Exception:
-        try:
-            with socket.create_connection((host, port), timeout=timeout):
-                return True
-        except Exception:
-            return False
+        return False
 
 def detect_device() -> str:
     """Dynamically detect the fastest available hardware accelerator."""
@@ -54,7 +49,19 @@ def detect_device() -> str:
             return "mps"
     except Exception:
         pass
-    return "mps" if sys.platform == "darwin" else "cpu"
+    return "cpu"
+
+
+def stop_owned_server(proc):
+    """Reap only a server started by this invocation; never stop an existing one."""
+    if proc is None or proc.poll() is not None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=5)
 
 def start_hybrid_server() -> subprocess.Popen:
     """Start local docling hybrid server in the background."""
@@ -75,17 +82,21 @@ def start_hybrid_server() -> subprocess.Popen:
         "--no-ocr",
     ]
     
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    proc = subprocess.Popen(cmd)
 
     print(f"[*] Initializing AI server & ML models...")
-    for _ in range(60):
-        if is_server_ready():
-            print("[+] Hybrid AI server is ready and listening!")
-            return proc
-        time.sleep(1)
-        
-    print("[!] Server process started. Proceeding...")
-    return proc
+    try:
+        for _ in range(60):
+            if proc.poll() is not None:
+                raise RuntimeError(f"Hybrid server exited before ready (code={proc.returncode})")
+            if is_server_ready():
+                print("[+] Hybrid AI server is ready and listening!")
+                return proc
+            time.sleep(1)
+        raise RuntimeError("Hybrid server did not become ready within 60 attempts")
+    except BaseException:
+        stop_owned_server(proc)
+        raise
 
 def run_conversion(input_path: str = "data", output_dir: str = "data/output_perfect"):
     """Run batch conversion with maximal quality parameters."""
@@ -158,17 +169,22 @@ def summarize_outputs(output_p: Path):
             print(f"  • Could not inspect {jf.name}: {e}")
     print("------------------------------------------------------\n")
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+def main(args=None):
+    args = sys.argv[1:] if args is None else args
+    if args and args[0] in ("-h", "--help"):
         print("Usage: python run_pipeline.py [INPUT_PATH] [OUTPUT_DIR]")
         print("Default INPUT_PATH: data")
         print("Default OUTPUT_DIR: data/output_perfect")
-        sys.exit(0)
+        return
 
     server_proc = start_hybrid_server()
     try:
-        input_target = sys.argv[1] if len(sys.argv) > 1 else "data"
-        out_target = sys.argv[2] if len(sys.argv) > 2 else "data/output_perfect"
+        input_target = args[0] if args else "data"
+        out_target = args[1] if len(args) > 1 else "data/output_perfect"
         run_conversion(input_target, out_target)
     finally:
-        pass
+        stop_owned_server(server_proc)
+
+
+if __name__ == "__main__":
+    main()
