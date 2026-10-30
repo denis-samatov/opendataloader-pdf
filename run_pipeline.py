@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-OpenDataLoader PDF - Ultimate Quality Turnkey Pipeline
+OpenDataLoader PDF - local conversion orchestration
 Automates:
 1. Cross-platform environment configuration (Java detection, PATH, OS-specific GPU/MPS accelerators)
 2. Lifecycle management of the Hybrid Docling Server
-3. Batch PDF conversion using maximal quality settings (tables, reading order, 300 DPI)
+3. Batch PDF conversion with requested table, reading-order and 300 DPI settings
 4. Post-processing & verification summary
 """
 

@@ -60,3 +60,56 @@ def test_cli_keeps_preexisting_server(pipeline, monkeypatch):
     monkeypatch.setattr(pipeline, "run_conversion", convert)
     pipeline.main(["input", "output"])
     convert.assert_called_once_with("input", "output")
+
+
+def test_help_never_starts_a_server(pipeline, monkeypatch, capsys):
+    start = Mock()
+    monkeypatch.setattr(pipeline, "start_hybrid_server", start)
+    pipeline.main(["--help"])
+    start.assert_not_called()
+    assert "INPUT_PATH" in capsys.readouterr().out
+
+
+def test_owned_real_child_is_reaped(pipeline):
+    child = pipeline.subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"],
+        stdout=pipeline.subprocess.DEVNULL,
+        stderr=pipeline.subprocess.DEVNULL,
+    )
+    try:
+        pipeline.stop_owned_server(child)
+        assert child.poll() is not None
+    finally:
+        if child.poll() is None:
+            child.kill()
+            child.wait(timeout=5)
+
+
+def test_readiness_checks_actual_http_status_and_health_path(pipeline):
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from threading import Thread
+
+    paths = []
+
+    class Health(BaseHTTPRequestHandler):
+        status_code = 200
+
+        def do_GET(self):
+            paths.append(self.path)
+            self.send_response(self.status_code)
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    with HTTPServer(("127.0.0.1", 0), Health) as server:
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            assert pipeline.is_server_ready(port=server.server_port)
+            Health.status_code = 503
+            assert not pipeline.is_server_ready(port=server.server_port)
+            assert paths == ["/health", "/health"]
+        finally:
+            server.shutdown()
+            thread.join(timeout=5)

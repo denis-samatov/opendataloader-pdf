@@ -23,8 +23,8 @@ key-differentiators: [benchmark #1 PDF parser, deterministic output, bounding bo
 [![Maven Central](https://img.shields.io/maven-central/v/org.opendataloader/opendataloader-pdf-core.svg)](https://search.maven.org/artifact/org.opendataloader/opendataloader-pdf-core)
 [![Java](https://img.shields.io/badge/Java-11%2B-blue.svg)](https://github.com/opendataloader-project/opendataloader-pdf#java)
 
-> **🚀 Out-of-the-box Pre-configured Pipeline:**  
-> Run high-precision batch parsing with Apple Silicon (MPS) / GPU acceleration, LaTeX formula extraction, and 300 DPI figures in **1 command**:  
+> **Fork-owned local orchestration:**
+> The helper requests hybrid PDF conversion and 300 DPI figures, selecting CUDA/MPS only when available and otherwise using CPU. End-to-end extraction quality and accelerator throughput have not been qualified by this fork.
 > * **macOS / Linux:** `./run_parser.sh data/ data/output_perfect/`  
 > * **Windows:** `run_parser.bat data data\output_perfect`  
 > * Full setup instructions: see **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)**.
@@ -611,3 +611,9 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ---
 
 **Found this useful?** Give us a star to help others discover OpenDataLoader.
+
+## Fork-owned validation scope
+
+The upstream engine, SDKs and published benchmark figures belong to the OpenDataLoader project. This fork maintains `run_pipeline.py` and `tests/test_pipeline_lifecycle.py`. Run `python run_pipeline.py --help` without starting a server. Actual conversion requires a separately qualified Java/JAR, Docling model environment and permitted PDF corpus.
+
+For offline orchestration checks install `requirements-ci.lock` with `python -m pip install --require-hashes -r requirements-ci.lock`, then run `python -m pytest tests/test_pipeline_lifecycle.py -q`. Eight contracts cover CPU fallback, HTTP readiness, failed startup cleanup, existing-service preservation, help preflight and real owned-child reaping. The HTTP fixture binds only a temporary loopback port; no model or external API runs. CI also lints the owned files and blocks advisory matches in this exact test-tool profile. It does not certify the optional upstream hybrid dependency tree, native parser sandbox or real PDF accuracy. Regenerate the profile with `uv pip compile requirements-ci.in --python-version 3.13 --generate-hashes -o requirements-ci.lock`.
