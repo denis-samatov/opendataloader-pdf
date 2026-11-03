@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+If repository documentation conflicts with the existing code, follow the conventions established in the code and report each discrepancy you find between the documentation and the code in your final response.
+
 ## Gotchas
 
 After changing CLI options in Java, **must** run `npm run sync` — this regenerates `options.json` and all Python/Node.js bindings. Forgetting this silently breaks the wrappers.
