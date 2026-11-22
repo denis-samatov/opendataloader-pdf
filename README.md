@@ -29,6 +29,20 @@ key-differentiators: [benchmark #1 PDF parser, deterministic output, bounding bo
 > * **Windows:** `run_parser.bat data data\output_perfect`  
 > * Full setup instructions: see **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)**.
 
+<p align="center">
+  <a href="DEVELOPER_GUIDE.md"><img alt="Fork setup" src="https://img.shields.io/badge/Fork%20setup-0F766E?style=for-the-badge" height="32"></a>
+  <a href="run_parser.sh"><img alt="Unix runner" src="https://img.shields.io/badge/Unix%20runner-1D4ED8?style=for-the-badge" height="32"></a>
+  <a href="run_parser.bat"><img alt="Windows runner" src="https://img.shields.io/badge/Windows%20runner-6D28D9?style=for-the-badge" height="32"></a>
+  <a href="https://github.com/opendataloader-project/opendataloader-pdf"><img alt="Upstream project" src="https://img.shields.io/badge/Upstream%20project-475569?style=for-the-badge" height="32"></a>
+</p>
+
+<details>
+<summary>Read the local batch-runner setup</summary>
+
+Start with the [developer guide](DEVELOPER_GUIDE.md) and choose the runner for your operating system. The fork documents its local hybrid conversion setup and CPU fallback. Use the upstream documentation for parser capabilities and published benchmarks.
+
+</details>
+
 <a href="https://trendshift.io/repositories/21917" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21917" alt="opendataloader-project%2Fopendataloader-pdf | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
 🔍 **PDF parser for AI data extraction** — Extract Markdown, JSON (with bounding boxes), and HTML from any PDF. #1 in benchmarks (0.907 overall). Deterministic local mode + AI hybrid mode for complex pages.
